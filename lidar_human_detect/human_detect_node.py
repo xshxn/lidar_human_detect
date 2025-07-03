@@ -26,8 +26,9 @@ class HumanDetectNode(Node):
         df = pd.read_csv(self.csv_file)
 
         # Crop bounds (hardcoded for now)
-        df = df[df['x'].between(0, 2)]
-        df = df[df['y'].between(-2, 0.5)]
+        df = df[df['x'].between(0, 3)]
+        df = df[df['y'].between(-0.5, 0.5)]
+        df = df[df['z'].between(0.05, 5)]
 
         points = df[['x', 'y', 'z']].values
 

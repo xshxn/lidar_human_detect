@@ -1,9 +1,26 @@
 from launch import LaunchDescription
-from launch.actions import TimerAction
+from launch.actions import TimerAction, RegisterEventHandler
+from launch.event_handlers import OnShutdown
+from launch.events import Shutdown
 from launch_ros.actions import Node
+import signal
+import sys
 
 def generate_launch_description():
+    def signal_handler(sig, frame):
+        print("\nCtrl+C shutdown")
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
     return LaunchDescription([
+        RegisterEventHandler(
+            OnShutdown(
+                on_shutdown=[
+                ]
+            )
+        ),
+
         Node(
             package='lidar_human_detect',
             executable='pcd_to_csv',

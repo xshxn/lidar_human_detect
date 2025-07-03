@@ -13,7 +13,7 @@ class PCDToCSVNode(Node):
         pcd_file = self.get_parameter('pcd_file').get_parameter_value().string_value
         csv_file = self.get_parameter('csv_file').get_parameter_value().string_value
         self.convert(pcd_file, csv_file)
-    
+
     def convert(self, pcd_file, csv_file):
         with open(pcd_file, 'rb') as f:
             while True:

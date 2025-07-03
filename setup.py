@@ -5,17 +5,17 @@ package_name = 'lidar_human_detect'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(exclude=['test']),
-    py_modules=[
+    packages=find_packages(exclude=['test']),    py_modules=[
         'lidar_human_detect.pcd_to_csv_node',
         'lidar_human_detect.human_detect_node',
         'lidar_human_detect.dist_calc_node',
-    ],
-    data_files=[
+        'lidar_human_detect.realtime_human_detect_node',
+    ],    data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/demo.launch.py'])  
+        ('share/' + package_name + '/launch', ['launch/demo.launch.py', 'launch/realtime_human_detection.launch.py', 'launch/human_detection_standalone.launch.py']),
+        ('share/' + package_name + '/rviz', ['rviz/human_detection.rviz'])
     ],
     install_requires=[
         'setuptools',
@@ -31,11 +31,11 @@ setup(
     maintainer_email='eshan@todo.todo',
     description='Human detection and analysis in LiDAR point clouds using ROS 2 and Open3D',
     license='TODO: License declaration',
-    entry_points={
-        'console_scripts': [
+    entry_points={        'console_scripts': [
             'pcd_to_csv = lidar_human_detect.pcd_to_csv_node:main',
             'detect_human = lidar_human_detect.human_detect_node:main',
             'dist_calc = lidar_human_detect.dist_calc_node:main',
+            'realtime_human_detect = lidar_human_detect.realtime_human_detect_node:main',
         ],
     },
 )
