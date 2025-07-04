@@ -30,6 +30,8 @@ class RealtimeHumanDetectNode(Node):
         self.z_max = self.get_parameter('z_max').get_parameter_value().double_value
         self.voxel_size = self.get_parameter('voxel_size').get_parameter_value().double_value
         
+        self.current_human_clusters = []
+        
         self.cloud_sub = self.create_subscription(
             PointCloud2,
             '/cloud_registered',
@@ -41,6 +43,8 @@ class RealtimeHumanDetectNode(Node):
             '/human_detection/colored_cloud',
             10
         )
+        
+        self.timer = self.create_timer(5.0, self.timer_callback)
 
         self.get_logger().info(f'Human detection region: X[{self.x_min}, {self.x_max}], Y[{self.y_min}, {self.y_max}], Z[{self.z_min}, {self.z_max}]')
         self.get_logger().info('Realtime Human Detection Node initialized')
@@ -94,8 +98,21 @@ class RealtimeHumanDetectNode(Node):
         )
         return points[mask]
     
+    def timer_callback(self):
+
+        if len(self.current_human_clusters) == 1:
+            human_cluster = self.current_human_clusters[0]
+            centroid = np.mean(human_cluster, axis=0)
+            
+            distance = np.linalg.norm(centroid)
+
+            self.get_logger().info(f'Single human detected - Centroid: [{centroid[0]:.3f}, {centroid[1]:.3f}, {centroid[2]:.3f}], Distance from origin: {distance:.3f}m')
+        else:
+            self.get_logger().info('More than one human detected')
+    
     def detect_humans(self, points):
         if len(points) < 10:
+            self.current_human_clusters = []
             return np.array([]), points
         
         voxels = self.voxelize(points, self.voxel_size)
@@ -105,23 +122,25 @@ class RealtimeHumanDetectNode(Node):
         human_points = []
         non_human_points = []
         human_cluster_count = 0
+        human_clusters = []
         
         for obj in objects:
             obj_array = np.array(obj)
-            
+
             votes = [
                 self.shape_classifier(obj_array),
                 self.normal_classifier(obj_array),
                 self.shadow_classifier(obj_array, points)
             ]
-            
+
             if self.shape_classifier(obj_array) and (self.shadow_classifier(obj_array, points) or self.normal_classifier(obj_array)):
                 human_points.extend(obj)
+                human_clusters.append(obj_array)
                 human_cluster_count += 1
             else:
                 non_human_points.extend(obj)
         
-        self.get_logger().info(f'Total number of human clusters detected: {human_cluster_count}')
+        self.current_human_clusters = human_clusters
         
         return np.array(human_points), np.array(non_human_points)
     
@@ -155,7 +174,7 @@ class RealtimeHumanDetectNode(Node):
                         labels[n] = current_label
                         queue.append(n)
             current_label += 1
-        
+
         objects = {}
         for label, voxel in zip(labels, voxels.values()):
             objects.setdefault(label, []).extend(voxel)
@@ -168,7 +187,7 @@ class RealtimeHumanDetectNode(Node):
         height = dims[2]
         width = max(dims[0], dims[1])
         aspect_ratio = width / height if height > 0 else 1
-        return int(1.3 <= height <= 2.0 and aspect_ratio < 1)
+        return int(1.3 <= height <= 2.0 and (aspect_ratio < 0.7 and aspect_ratio > 0.1))
     
     def normal_classifier(self, pts):
         if len(pts) < 10:
@@ -181,7 +200,6 @@ class RealtimeHumanDetectNode(Node):
             return int(cos_angle < 0.80)
         except:
             return 0   
-        
         
     def shadow_classifier(self, pts, all_pts):
         if len(pts) < 5:

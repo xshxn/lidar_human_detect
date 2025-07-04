@@ -44,7 +44,7 @@ class RealtimeHumanDetectNode(Node):
             10
         )
         
-        self.timer = self.create_timer(10.0, self.timer_callback)
+        self.timer = self.create_timer(5.0, self.timer_callback)
 
         self.get_logger().info(f'Human detection region: X[{self.x_min}, {self.x_max}], Y[{self.y_min}, {self.y_max}], Z[{self.z_min}, {self.z_max}]')
         self.get_logger().info('Realtime Human Detection Node initialized')
@@ -107,6 +107,8 @@ class RealtimeHumanDetectNode(Node):
             distance = np.linalg.norm(centroid)
 
             self.get_logger().info(f'Single human detected - Centroid: [{centroid[0]:.3f}, {centroid[1]:.3f}, {centroid[2]:.3f}], Distance from origin: {distance:.3f}m')
+        else:
+            self.get_logger().info('More than one human detected')
     
     def detect_humans(self, points):
         if len(points) < 10:
@@ -139,7 +141,6 @@ class RealtimeHumanDetectNode(Node):
                 non_human_points.extend(obj)
         
         self.current_human_clusters = human_clusters
-        self.get_logger().info(f'Total number of human clusters detected: {human_cluster_count}')
         
         return np.array(human_points), np.array(non_human_points)
     
@@ -186,7 +187,7 @@ class RealtimeHumanDetectNode(Node):
         height = dims[2]
         width = max(dims[0], dims[1])
         aspect_ratio = width / height if height > 0 else 1
-        return int(1.3 <= height <= 2.0 and aspect_ratio < 1)
+        return int(1.3 <= height <= 2.0 and (aspect_ratio < 0.7 and aspect_ratio > 0.1))
     
     def normal_classifier(self, pts):
         if len(pts) < 10:
